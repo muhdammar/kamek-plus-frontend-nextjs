@@ -29,6 +29,41 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Authentication Setup
+
+This project uses [Auth.js v5](https://authjs.dev) (next-auth@beta) with Google OAuth and a PostgreSQL database via Prisma.
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+- `AUTH_SECRET` — Run `openssl rand -base64 32` to generate
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — From [Google Cloud Console](https://console.cloud.google.com/)
+  - Set Authorized redirect URI to: `http://localhost:3000/api/auth/callback/google`
+- `DATABASE_URL` — PostgreSQL connection string
+
+### Database Setup
+
+```bash
+npx prisma migrate dev --name init
+# or push schema directly (no migrations)
+npx prisma db push
+```
+
+### Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Public homepage |
+| `/login` | Google OAuth sign-in page |
+| `/admin` | Protected admin dashboard (requires auth) |
+| `/api/auth/[...nextauth]` | Auth.js API handler |
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
