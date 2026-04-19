@@ -52,7 +52,7 @@ export default async function LoginPage() {
               </div>
             </CardContent>
           </Card>
-          <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+          <div className="text-muted-foreground [&_a]:hover:text-primary text-center text-xs text-balance [&_a]:underline [&_a]:underline-offset-4">
             By signing in, you agree to our{" "}
             <a href="#">Terms of Service</a>{" "}
             and{" "}
