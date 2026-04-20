@@ -1,8 +1,19 @@
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdminSidebar } from "@/components/admin-sidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { AdminNavMain } from "@/components/admin-sidebar";
 
 export default async function AdminLayout({
   children,
@@ -16,22 +27,26 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className="flex w-60 shrink-0 flex-col border-r">
-        {/* Logo */}
-        <div className="flex h-14 items-center border-b px-4">
-          <span className="text-base font-semibold">Kamek Plus</span>
-        </div>
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
+        {/* Sidebar header — logo */}
+        <SidebarHeader className="h-14 justify-center border-b px-4">
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="size-5 shrink-0" />
+            <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">
+              Kamek Plus
+            </span>
+          </div>
+        </SidebarHeader>
 
-        {/* Nav */}
-        <div className="flex-1 overflow-y-auto py-4">
-          <AdminSidebar />
-        </div>
+        {/* Nav items */}
+        <SidebarContent>
+          <AdminNavMain />
+        </SidebarContent>
 
-        {/* User + sign out */}
-        <div className="border-t p-4">
-          <div className="flex items-center gap-3">
+        {/* User footer */}
+        <SidebarFooter className="border-t p-3">
+          <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
             {session.user.image && (
               <Image
                 src={session.user.image}
@@ -41,17 +56,17 @@ export default async function AdminLayout({
                 className="size-8 shrink-0 rounded-full"
               />
             )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">
+            <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+              <p className="truncate text-sm font-medium leading-none">
                 {session.user.name}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground mt-0.5">
                 {session.user.email}
               </p>
             </div>
           </div>
           <form
-            className="mt-3"
+            className="mt-2 group-data-[collapsible=icon]:hidden"
             action={async () => {
               "use server";
               await signOut({ redirectTo: "/login" });
@@ -66,13 +81,20 @@ export default async function AdminLayout({
               Sign out
             </Button>
           </form>
-        </div>
-      </aside>
+        </SidebarFooter>
+      </Sidebar>
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Page content */}
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mx-2 h-4" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Admin
+          </span>
+        </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
