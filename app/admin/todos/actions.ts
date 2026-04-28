@@ -79,6 +79,61 @@ export async function createTodoCategory(input: { name: string; icon: string }) 
   return category satisfies CategoryDTO;
 }
 
+export async function updateTodoCategory(input: {
+  todoCategoryId: string;
+  name: string;
+  icon: string;
+}) {
+  const userId = await requireUserId();
+
+  const todoCategoryId = input.todoCategoryId;
+  const rawName = normalize(input.name);
+  const icon = normalize(input.icon);
+
+  if (!todoCategoryId) throw new Error("TodoCategory is required");
+  if (!rawName) throw new Error("TodoCategory name is required");
+  if (!icon) throw new Error("Category icon is required");
+
+  const canAccess = await prisma.todoCategory.findFirst({
+    where: { id: todoCategoryId, userId },
+    select: { id: true },
+  });
+
+  if (!canAccess) throw new Error("TodoCategory not found");
+
+  const label = rawName.toUpperCase();
+  const name = slugify(rawName) || rawName.toLowerCase();
+
+  const category = await prisma.todoCategory.update({
+    where: { id: todoCategoryId },
+    data: { name, label, icon },
+    select: { id: true, name: true, label: true, icon: true },
+  });
+
+  revalidatePath("/admin/todos");
+  return category satisfies CategoryDTO;
+}
+
+export async function deleteTodoCategory(input: { todoCategoryId: string }) {
+  const userId = await requireUserId();
+  const todoCategoryId = input.todoCategoryId;
+
+  if (!todoCategoryId) throw new Error("TodoCategory is required");
+
+  const canAccess = await prisma.todoCategory.findFirst({
+    where: { id: todoCategoryId, userId },
+    select: { id: true },
+  });
+
+  if (!canAccess) throw new Error("TodoCategory not found");
+
+  // Cascades to related todos via FK onDelete: Cascade
+  await prisma.todoCategory.delete({ where: { id: todoCategoryId } });
+
+  revalidatePath("/admin/todos");
+  return { ok: true } as const;
+}
+
 export async function createTodo(input: { categoryId: string; text: string }) {
   const userId = await requireUserId();
 

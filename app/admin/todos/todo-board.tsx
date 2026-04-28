@@ -23,8 +23,11 @@ import {
   GripVertical,
   Home,
   ListTodo,
+  Pencil,
   Plane,
+  Plus,
   RotateCcw,
+  Settings,
   ShoppingBag,
   Trash2,
 } from "lucide-react";
@@ -41,12 +44,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   createTodoCategory,
   createTodo,
+  deleteTodoCategory,
   deleteDoneTodos,
   deleteTodo,
   reorderTodos,
   setTodoCompleted,
+  updateTodoCategory,
   updateTodoText,
   type CategoryDTO,
   type TodoDTO,
@@ -91,12 +102,7 @@ function SortableTodoRow(props: {
   todo: TodoDTO;
   onDone: () => void;
   onDelete: () => void;
-  onStartEdit: () => void;
-  isEditing: boolean;
-  draftText: string;
-  setDraftText: (v: string) => void;
-  onCommitEdit: () => void;
-  onCancelEdit: () => void;
+  onRename: () => void;
 }) {
   const {
     attributes,
@@ -130,27 +136,14 @@ function SortableTodoRow(props: {
       </button>
 
       <div className="min-w-0 flex-1">
-        {props.isEditing ? (
-          <Input
-            value={props.draftText}
-            onChange={(e) => props.setDraftText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") props.onCommitEdit();
-              if (e.key === "Escape") props.onCancelEdit();
-            }}
-            onBlur={() => props.onCommitEdit()}
-            autoFocus
-          />
-        ) : (
-          <button
-            type="button"
-            className="w-full truncate text-left"
-            onClick={props.onStartEdit}
-            title="Click to edit"
-          >
-            {props.todo.text}
-          </button>
-        )}
+        <button
+          type="button"
+          className="w-full truncate text-left"
+          onClick={props.onRename}
+          title="Click to rename"
+        >
+          {props.todo.text}
+        </button>
       </div>
 
       <div className="flex items-center gap-2">
@@ -193,33 +186,41 @@ export default function TodoBoard({
 
   const [isAddCategoryOpen, setIsAddCategoryOpen] = React.useState(false);
   const [newCategoryName, setNewCategoryName] = React.useState("");
-  const [selectedIconKey, setSelectedIconKey] = React.useState<string>(
+  const [addSelectedIconKey, setAddSelectedIconKey] = React.useState<string>(
     ICON_OPTIONS[0]?.key ?? "shopping_bag"
   );
+
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = React.useState(false);
+  const [editCategoryName, setEditCategoryName] = React.useState("");
+  const [editSelectedIconKey, setEditSelectedIconKey] = React.useState<string>(
+    ICON_OPTIONS[0]?.key ?? "shopping_bag"
+  );
+  const [isConfirmDeleteCategoryOpen, setIsConfirmDeleteCategoryOpen] =
+    React.useState(false);
 
   const [isAddTodoOpen, setIsAddTodoOpen] = React.useState(false);
   const [newTodoText, setNewTodoText] = React.useState("");
 
-  const [editingTodoId, setEditingTodoId] = React.useState<string | null>(null);
-  const [draftText, setDraftText] = React.useState("");
+  const [renameTodoId, setRenameTodoId] = React.useState<string | null>(null);
+  const [renameText, setRenameText] = React.useState("");
+
+  const [confirmDeleteTodoId, setConfirmDeleteTodoId] = React.useState<string | null>(null);
+  const [isConfirmDeleteDoneOpen, setIsConfirmDeleteDoneOpen] = React.useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const activeTodos = activeCategory ? getActiveTodos(activeCategory) : [];
   const doneTodos = activeCategory ? getDoneTodos(activeCategory) : [];
 
-  const commitEdit = async () => {
-    const todoId = editingTodoId;
-    const text = draftText.trim();
+  const commitRename = async () => {
+    const todoId = renameTodoId;
+    const text = renameText.trim();
 
     if (!todoId) return;
+    if (!text) return;
 
-    setEditingTodoId(null);
-
-    if (!text) {
-      // revert by not saving
-      return;
-    }
+    setRenameTodoId(null);
+    setRenameText("");
 
     setCategories((prev) =>
       prev.map((c) => ({
@@ -231,13 +232,8 @@ export default function TodoBoard({
     try {
       await updateTodoText({ todoId, text });
     } catch {
-      // ignore; user can refresh
+      // ignore
     }
-  };
-
-  const cancelEdit = () => {
-    setEditingTodoId(null);
-    setDraftText("");
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -275,7 +271,7 @@ export default function TodoBoard({
 
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
-    const icon = selectedIconKey.trim();
+    const icon = addSelectedIconKey.trim();
     if (!name || !icon) return;
 
     try {
@@ -283,10 +279,70 @@ export default function TodoBoard({
       setCategories((prev) => [...prev, { ...created, todos: [] }]);
       setActiveCategoryId(created.id);
       setNewCategoryName("");
-      setSelectedIconKey(ICON_OPTIONS[0]?.key ?? "shopping_bag");
+      setAddSelectedIconKey(ICON_OPTIONS[0]?.key ?? "shopping_bag");
       setIsAddCategoryOpen(false);
     } catch {
       // ignore; keep inputs
+    }
+  };
+
+  const openEditCategory = () => {
+    if (!activeCategory) return;
+    setEditCategoryName(activeCategory.label);
+    setEditSelectedIconKey(activeCategory.icon);
+    setIsEditCategoryOpen(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!activeCategory) return;
+    const name = editCategoryName.trim();
+    const icon = editSelectedIconKey.trim();
+    if (!name || !icon) return;
+
+    const optimistic: CategoryDTO = {
+      id: activeCategory.id,
+      name: activeCategory.name,
+      label: name.toUpperCase(),
+      icon,
+    };
+
+    setCategories((prev) =>
+      prev.map((c) => (c.id === activeCategory.id ? { ...c, ...optimistic } : c))
+    );
+
+    setIsEditCategoryOpen(false);
+
+    try {
+      const updated = await updateTodoCategory({
+        todoCategoryId: activeCategory.id,
+        name,
+        icon,
+      });
+
+      setCategories((prev) =>
+        prev.map((c) => (c.id === activeCategory.id ? { ...c, ...updated } : c))
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!activeCategory) return;
+    const deletingId = activeCategory.id;
+
+    const remaining = categories.filter((c) => c.id !== deletingId);
+
+    setIsConfirmDeleteCategoryOpen(false);
+    setIsEditCategoryOpen(false);
+
+    setCategories(remaining);
+    setActiveCategoryId((prev) => (prev === deletingId ? remaining[0]?.id ?? null : prev));
+
+    try {
+      await deleteTodoCategory({ todoCategoryId: deletingId });
+    } catch {
+      // ignore
     }
   };
 
@@ -404,8 +460,14 @@ export default function TodoBoard({
             <h1 className="text-2xl font-bold tracking-tight">Todos</h1>
             <p className="text-muted-foreground">Per-category todo lists</p>
           </div>
-          <Button variant="secondary" onClick={() => setIsAddCategoryOpen(true)}>
-            Add TodoCategory
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={() => setIsAddCategoryOpen(true)}
+            aria-label="Add TodoCategory"
+            title="Add TodoCategory"
+          >
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -432,13 +494,13 @@ export default function TodoBoard({
               <div className="text-sm font-medium">Icon</div>
               <div className="flex flex-wrap gap-2">
                 {ICON_OPTIONS.map((opt) => {
-                  const isActive = selectedIconKey === opt.key;
+                  const isActive = addSelectedIconKey === opt.key;
                   return (
                     <Button
                       key={opt.key}
                       type="button"
                       variant={isActive ? "default" : "secondary"}
-                      onClick={() => setSelectedIconKey(opt.key)}
+                      onClick={() => setAddSelectedIconKey(opt.key)}
                       className="gap-2"
                     >
                       <CategoryIcon icon={opt.key} />
@@ -461,24 +523,146 @@ export default function TodoBoard({
         </DialogContent>
       </Dialog>
 
-      {categories.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => {
-            const pendingCount = category.todos.filter((t) => !t.isCompleted).length;
-            const isActive = category.id === activeCategoryId;
-            return (
-              <Button
-                key={category.id}
-                variant={isActive ? "default" : "secondary"}
-                onClick={() => setActiveCategoryId(category.id)}
-                className="gap-2"
-              >
-                <CategoryIcon icon={category.icon} />
-                <span className="max-w-40 truncate">{category.label}</span>
-                <Badge variant={isActive ? "secondary" : "outline"}>{pendingCount}</Badge>
+      {activeCategory && (
+        <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit TodoCategory</DialogTitle>
+              <DialogDescription>Rename or change icon.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 px-4 pb-4">
+              <Input
+                placeholder="TodoCategory name"
+                value={editCategoryName}
+                onChange={(e) => setEditCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleUpdateCategory();
+                }}
+                autoFocus
+              />
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Icon</div>
+                <div className="flex flex-wrap gap-2">
+                  {ICON_OPTIONS.map((opt) => {
+                    const isActive = editSelectedIconKey === opt.key;
+                    return (
+                      <Button
+                        key={opt.key}
+                        type="button"
+                        variant={isActive ? "default" : "secondary"}
+                        onClick={() => setEditSelectedIconKey(opt.key)}
+                        className="gap-2"
+                      >
+                        <CategoryIcon icon={opt.key} />
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setIsEditCategoryOpen(false)}>
+                Cancel
               </Button>
-            );
-          })}
+              <Button
+                onClick={handleUpdateCategory}
+                disabled={!editCategoryName.trim()}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {activeCategory && (
+        <Dialog
+          open={isConfirmDeleteCategoryOpen}
+          onOpenChange={setIsConfirmDeleteCategoryOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete TodoCategory?</DialogTitle>
+              <DialogDescription>
+                This will delete the category and all related tasks.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="secondary"
+                onClick={() => setIsConfirmDeleteCategoryOpen(false)}
+              >
+                No
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteCategory}>
+                Yes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {categories.length > 0 ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const pendingCount = category.todos.filter((t) => !t.isCompleted).length;
+              const isActive = category.id === activeCategoryId;
+              return (
+                <Button
+                  key={category.id}
+                  variant={isActive ? "default" : "secondary"}
+                  onClick={() => setActiveCategoryId(category.id)}
+                  className="gap-2"
+                >
+                  <CategoryIcon icon={category.icon} />
+                  <span className="max-w-40 truncate">{category.label}</span>
+                  <Badge variant={isActive ? "secondary" : "outline"}>
+                    {pendingCount}
+                  </Badge>
+                </Button>
+              );
+            })}
+          </div>
+
+          {activeCategory && (
+            <div className="flex items-center justify-between">
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={openEditCategory}
+                aria-label="Edit TodoCategory"
+                title="Edit TodoCategory"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    aria-label="TodoCategory actions"
+                    title="TodoCategory actions"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => setIsConfirmDeleteCategoryOpen(true)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
       ) : (
         <Card>
@@ -510,16 +694,11 @@ export default function TodoBoard({
                         key={todo.id}
                         todo={todo}
                         onDone={() => handleDone(todo.id)}
-                        onDelete={() => handleDelete(todo.id)}
-                        onStartEdit={() => {
-                          setEditingTodoId(todo.id);
-                          setDraftText(todo.text);
+                        onDelete={() => setConfirmDeleteTodoId(todo.id)}
+                        onRename={() => {
+                          setRenameTodoId(todo.id);
+                          setRenameText(todo.text);
                         }}
-                        isEditing={editingTodoId === todo.id}
-                        draftText={editingTodoId === todo.id ? draftText : todo.text}
-                        setDraftText={setDraftText}
-                        onCommitEdit={commitEdit}
-                        onCancelEdit={cancelEdit}
                       />
                     ))}
                     {activeTodos.length === 0 && (
@@ -536,7 +715,7 @@ export default function TodoBoard({
               <CardTitle>Done</CardTitle>
               <Button
                 variant="secondary"
-                onClick={handleDeleteDone}
+                onClick={() => setIsConfirmDeleteDoneOpen(true)}
                 disabled={doneTodos.length === 0}
               >
                 Delete All
@@ -567,6 +746,99 @@ export default function TodoBoard({
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {activeCategory && (
+        <Dialog open={renameTodoId !== null} onOpenChange={(open) => {
+          if (!open) {
+            setRenameTodoId(null);
+            setRenameText("");
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Task</DialogTitle>
+              <DialogDescription>Update the task name.</DialogDescription>
+            </DialogHeader>
+            <div className="px-4 pb-4">
+              <Input
+                value={renameText}
+                onChange={(e) => setRenameText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                }}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setRenameTodoId(null);
+                  setRenameText("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={commitRename} disabled={!renameText.trim()}>
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {activeCategory && (
+        <Dialog open={confirmDeleteTodoId !== null} onOpenChange={(open) => {
+          if (!open) setConfirmDeleteTodoId(null);
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Task?</DialogTitle>
+              <DialogDescription>This action cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setConfirmDeleteTodoId(null)}>
+                No
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  const id = confirmDeleteTodoId;
+                  setConfirmDeleteTodoId(null);
+                  if (id) await handleDelete(id);
+                }}
+              >
+                Yes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {activeCategory && (
+        <Dialog open={isConfirmDeleteDoneOpen} onOpenChange={setIsConfirmDeleteDoneOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete All Done Tasks?</DialogTitle>
+              <DialogDescription>Deletes all completed tasks in this TodoCategory.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setIsConfirmDeleteDoneOpen(false)}>
+                No
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  setIsConfirmDeleteDoneOpen(false);
+                  await handleDeleteDone();
+                }}
+              >
+                Yes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {activeCategory && (
