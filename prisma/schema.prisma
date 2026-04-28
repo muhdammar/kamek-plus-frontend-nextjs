@@ -21,8 +21,50 @@ model User {
   // Optional for WebAuthn support
   Authenticator Authenticator[]
 
+  todoCategories TodoCategory[]
+  todos          Todo[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TodoCategory {
+  id     String @id @default(cuid())
+  userId String
+
+  // e.g. "kuching raya"
+  name  String
+  // e.g. "KUCHING RAYA" (display)
+  label String
+  // stored string key for UI mapping
+  icon String
+
+  todos Todo[]
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model Todo {
+  id         String  @id @default(cuid())
+  userId     String
+  todoCategoryId String
+
+  text        String
+  isCompleted Boolean @default(false)
+  order       Int     @default(0)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todoCategory TodoCategory @relation(fields: [todoCategoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, todoCategoryId])
+  @@index([todoCategoryId, isCompleted, order])
 }
 
 model Account {

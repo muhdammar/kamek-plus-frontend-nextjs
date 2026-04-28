@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { LayoutDashboard, Users, Settings, ShieldCheck } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  ShieldCheck,
+  ListTodo,
+} from "lucide-react";
 import { auth } from "@/auth";
 import {
   Sidebar,
@@ -21,6 +27,7 @@ const navGroups = [
     title: "General",
     items: [
       { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+      { title: "Todos", url: "/admin/todos", icon: ListTodo },
       { title: "Users", url: "/admin/users", icon: Users },
     ],
   },
