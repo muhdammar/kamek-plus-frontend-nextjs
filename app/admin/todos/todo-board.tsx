@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -127,7 +128,7 @@ function SortableTodoRow(props: {
     >
       <button
         type="button"
-        className="cursor-grab text-muted-foreground"
+        className="cursor-grab select-none touch-none text-muted-foreground active:cursor-grabbing"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder"
@@ -207,7 +208,10 @@ export default function TodoBoard({
   const [confirmDeleteTodoId, setConfirmDeleteTodoId] = React.useState<string | null>(null);
   const [isConfirmDeleteDoneOpen, setIsConfirmDeleteDoneOpen] = React.useState(false);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
 
   const activeTodos = activeCategory ? getActiveTodos(activeCategory) : [];
   const doneTodos = activeCategory ? getDoneTodos(activeCategory) : [];
