@@ -462,12 +462,13 @@ export default function TodoBoard({
           </div>
           <Button
             variant="secondary"
-            size="icon"
             onClick={() => setIsAddCategoryOpen(true)}
             aria-label="Add TodoCategory"
             title="Add TodoCategory"
+            className="gap-2"
           >
             <Plus className="h-4 w-4" />
+            <span>Add Category</span>
           </Button>
         </div>
       </div>
@@ -475,13 +476,13 @@ export default function TodoBoard({
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add TodoCategory</DialogTitle>
+            <DialogTitle>Add New Category</DialogTitle>
             <DialogDescription>Choose a name and icon.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 px-4 pb-4">
             <Input
-              placeholder="TodoCategory name"
+              placeholder="Category name"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               onKeyDown={(e) => {
@@ -527,13 +528,13 @@ export default function TodoBoard({
         <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Edit TodoCategory</DialogTitle>
+              <DialogTitle>Edit Category</DialogTitle>
               <DialogDescription>Rename or change icon.</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 px-4 pb-4">
               <Input
-                placeholder="TodoCategory name"
+                placeholder="Category name"
                 value={editCategoryName}
                 onChange={(e) => setEditCategoryName(e.target.value)}
                 onKeyDown={(e) => {
@@ -586,7 +587,7 @@ export default function TodoBoard({
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete TodoCategory?</DialogTitle>
+              <DialogTitle>Delete Category?</DialogTitle>
               <DialogDescription>
                 This will delete the category and all related tasks.
               </DialogDescription>
@@ -657,7 +658,7 @@ export default function TodoBoard({
                     className="cursor-pointer"
                     onClick={() => setIsConfirmDeleteCategoryOpen(true)}
                   >
-                    Delete
+                    Delete Category
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

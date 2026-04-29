@@ -51,6 +51,8 @@ Required variables:
 
 ```bash
 npx prisma migrate dev --name init
+# or deploy existing migrations
+npx prisma migrate deploy
 # or push schema directly (no migrations)
 npx prisma db push
 ```
