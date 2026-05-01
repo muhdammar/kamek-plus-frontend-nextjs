@@ -75,7 +75,7 @@ export async function createTodoCategory(input: { name: string; icon: string }) 
     select: { id: true, name: true, label: true, icon: true },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return category satisfies CategoryDTO;
 }
 
@@ -110,7 +110,7 @@ export async function updateTodoCategory(input: {
     select: { id: true, name: true, label: true, icon: true },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return category satisfies CategoryDTO;
 }
 
@@ -130,7 +130,7 @@ export async function deleteTodoCategory(input: { todoCategoryId: string }) {
   // Cascades to related todos via FK onDelete: Cascade
   await prisma.todoCategory.delete({ where: { id: todoCategoryId } });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return { ok: true } as const;
 }
 
@@ -173,7 +173,7 @@ export async function createTodo(input: { categoryId: string; text: string }) {
     },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return todo satisfies TodoDTO;
 }
 
@@ -205,7 +205,7 @@ export async function updateTodoText(input: { todoId: string; text: string }) {
     },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return todo satisfies TodoDTO;
 }
 
@@ -248,7 +248,7 @@ export async function setTodoCompleted(input: { todoId: string; isCompleted: boo
     },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return todo satisfies TodoDTO;
 }
 
@@ -266,7 +266,7 @@ export async function deleteTodo(input: { todoId: string }) {
 
   await prisma.todo.delete({ where: { id: todoId } });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return { ok: true } as const;
 }
 
@@ -279,7 +279,7 @@ export async function deleteDoneTodos(input: { categoryId: string }) {
     where: { userId, todoCategoryId, isCompleted: true },
   });
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return { ok: true } as const;
 }
 
@@ -314,6 +314,6 @@ export async function reorderTodos(input: { categoryId: string; orderedTodoIds: 
     )
   );
 
-  revalidatePath("/admin/todos");
+  revalidatePath("/home/todos");
   return { ok: true } as const;
 }

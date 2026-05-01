@@ -7,8 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "Kamek Plus Admin",
-  description: "Kamek Plus Administration Dashboard",
+  title: "Kamek Plus",
+  description: "Kamek Plus Dashboard",
 };
 
 export default function RootLayout({

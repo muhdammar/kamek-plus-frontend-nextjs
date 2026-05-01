@@ -18,7 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
+      const isOnAdminPage = nextUrl.pathname.startsWith("/home");
       if (isOnAdminPage) {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page

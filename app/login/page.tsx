@@ -13,7 +13,7 @@ export default async function LoginPage() {
   const session = await auth();
 
   if (session?.user) {
-    redirect("/admin");
+    redirect("/home");
   }
 
   return (
@@ -32,7 +32,7 @@ export default async function LoginPage() {
                 <form
                   action={async () => {
                     "use server";
-                    await signIn("google", { redirectTo: "/admin" });
+                    await signIn("google", { redirectTo: "/home" });
                   }}
                 >
                   <Button type="submit" variant="outline" className="w-full">

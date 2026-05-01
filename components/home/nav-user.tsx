@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { signOutAction } from "@/app/admin/actions";
+import { signOutAction } from "@/app/home/actions";
 
 type NavUserProps = {
   user: {

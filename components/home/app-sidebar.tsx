@@ -26,15 +26,14 @@ const navGroups = [
   {
     title: "General",
     items: [
-      { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-      { title: "Todos", url: "/admin/todos", icon: ListTodo },
-      { title: "Users", url: "/admin/users", icon: Users },
+      { title: "Dashboard", url: "/home", icon: LayoutDashboard },
+      { title: "Todos", url: "/home/todos", icon: ListTodo },
     ],
   },
   {
     title: "Other",
     items: [
-      { title: "Settings", url: "/admin/settings", icon: Settings },
+      { title: "Settings", url: "/home/settings", icon: Settings },
     ],
   },
 ];
@@ -49,7 +48,7 @@ export async function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/admin">
+              <Link href="/home">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <ShieldCheck className="size-4" />
                 </div>
