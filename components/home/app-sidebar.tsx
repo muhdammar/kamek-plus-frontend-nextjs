@@ -5,6 +5,7 @@ import {
   Settings,
   ShieldCheck,
   ListTodo,
+  Timer,
 } from "lucide-react";
 import { auth } from "@/auth";
 import {
@@ -28,6 +29,7 @@ const navGroups = [
     items: [
       { title: "Dashboard", url: "/home", icon: LayoutDashboard },
       { title: "Todos", url: "/home/todos", icon: ListTodo },
+      { title: "Pomodoro", url: "/home/pomodoro", icon: Timer },
     ],
   },
   {
