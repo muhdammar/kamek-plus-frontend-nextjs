@@ -6,7 +6,7 @@ import { ModeTabs } from "./mode-tabs";
 import { TimerDisplay } from "./timer-display";
 import { TimerControls } from "./timer-controls";
 import { TimerSettings } from "./timer-settings";
-import { playBell } from "@/lib/play-bell";
+import { playBell, playStartSound } from "@/lib/play-bell";
 
 type Mode = "focus" | "short-break" | "long-break";
 
@@ -64,6 +64,14 @@ export function PomodoroTimer() {
     setTimeLeft(newDurations[mode]);
   }
 
+  function handleToggle() {
+    if (!isRunning) {
+      playStartSound();
+    }
+
+    setIsRunning((prev) => !prev);
+  }
+
   return (
     <Card className="w-full max-w-sm mx-auto">
       <CardHeader>
@@ -77,7 +85,7 @@ export function PomodoroTimer() {
         <TimerDisplay timeLeft={timeLeft} />
         <TimerControls
           isRunning={isRunning}
-          onToggle={() => setIsRunning((prev) => !prev)}
+          onToggle={handleToggle}
           onReset={handleReset}
         />
       </CardContent>
