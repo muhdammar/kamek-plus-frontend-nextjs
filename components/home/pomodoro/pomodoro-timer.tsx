@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModeTabs } from "./mode-tabs";
 import { TimerDisplay } from "./timer-display";
@@ -23,29 +23,36 @@ export function PomodoroTimer() {
   const [durations, setDurations] = useState<Durations>(DEFAULT_DURATIONS);
   const [timeLeft, setTimeLeft] = useState(DEFAULT_DURATIONS["focus"]);
   const [isRunning, setIsRunning] = useState(false);
-
-  // Reset timer whenever mode changes
-  useEffect(() => {
-    setIsRunning(false);
-    setTimeLeft(durations[mode]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  const endTimeRef = useRef<number | null>(null);
 
   // Countdown tick
   useEffect(() => {
     if (!isRunning) return;
 
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setIsRunning(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const tick = () => {
+      const endTime = endTimeRef.current;
+      if (!endTime) return;
 
-    return () => clearInterval(interval);
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      setTimeLeft(remaining);
+
+      if (remaining === 0) {
+        setIsRunning(false);
+        endTimeRef.current = null;
+      }
+    };
+
+    const interval = setInterval(tick, 250);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [isRunning]);
 
   // Play bell when countdown finishes
@@ -55,18 +62,34 @@ export function PomodoroTimer() {
 
   function handleReset() {
     setIsRunning(false);
+    endTimeRef.current = null;
     setTimeLeft(durations[mode]);
+  }
+
+  function handleModeChange(nextMode: Mode) {
+    setMode(nextMode);
+    setIsRunning(false);
+    endTimeRef.current = null;
+    setTimeLeft(durations[nextMode]);
   }
 
   function handleSaveDurations(newDurations: Durations) {
     setDurations(newDurations);
     setIsRunning(false);
+    endTimeRef.current = null;
     setTimeLeft(newDurations[mode]);
   }
 
   function handleToggle() {
     if (!isRunning) {
       playStartSound();
+      endTimeRef.current = Date.now() + timeLeft * 1000;
+    } else {
+      const endTime = endTimeRef.current;
+      if (endTime) {
+        setTimeLeft(Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
+      }
+      endTimeRef.current = null;
     }
 
     setIsRunning((prev) => !prev);
@@ -81,7 +104,7 @@ export function PomodoroTimer() {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-8 pb-8">
-        <ModeTabs mode={mode} onModeChange={setMode} />
+        <ModeTabs mode={mode} onModeChange={handleModeChange} />
         <TimerDisplay timeLeft={timeLeft} />
         <TimerControls
           isRunning={isRunning}
